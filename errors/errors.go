@@ -50,6 +50,8 @@ func getError(key string, account string, lang string, params map[string]string)
 	return Info
 }
 
-func New(key, entity string, developerInfo string, params map[string]string) *ResponseErrors {
+//TODO: find error by key, replace params with key params check if entities full .
 
+func New(key, entity string, developerInfo string, params map[string]string) *ResponseErrors {
+	return nil
 }
