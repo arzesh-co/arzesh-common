@@ -1,12 +1,17 @@
 package API
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/arzesh-co/arzesh-common/errors"
 	"github.com/arzesh-co/arzesh-common/tools"
+	"github.com/arzesh-co/arzesh-common/tracing"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"net/http"
 	"strconv"
 	"strings"
@@ -22,7 +27,10 @@ type InfoRequest struct {
 	Limit         int64
 	ClientToken   string
 	UserToken     string
-	route         string
+	Route         string
+	Tracer        trace.Tracer
+	TraceShutdown func(context.Context) error
+	Ctx           context.Context
 }
 type filter struct {
 	Condition any
@@ -63,18 +71,32 @@ func createLimit(strLimit string) int64 {
 	return limit
 }
 
-func New(request http.Request) *InfoRequest {
+func New(request http.Request, service, serviceVersion string) *InfoRequest {
+	ctx := context.Background()
 	req := &InfoRequest{}
 	req.RequestFilter = request.URL.Query().Get("filter")
 	// TODO : how can fill this part
 	req.PolicyFilter = ""
 	req.Skip = createSkip(request.URL.Query().Get("skip"))
 	req.Limit = createLimit(request.URL.Query().Get("limit"))
-	req.route = request.URL.Path
+	req.Route = request.URL.Path
 	req.ClientToken = request.Header.Get("client")
 	req.GroupFilter = request.URL.Query().Get("aggregation")
 	req.Sort = request.URL.Query().Get("sort")
 	req.UserToken = request.Header.Get("id_token")
+	shutdown, err := tracing.InitProvider(service, serviceVersion)
+	if err != nil {
+		return req
+	}
+	req.TraceShutdown = shutdown
+	tracer := otel.Tracer(req.Route)
+	// work begins
+	req.Tracer = tracer
+	ctx, span := tracer.Start(
+		ctx,
+		"start request presses")
+	defer span.End()
+	req.Ctx = ctx
 	return req
 }
 
@@ -312,5 +334,16 @@ func (r InfoRequest) NewResponse(data any, messageKey string, Error *errors.Resp
 	if otp != nil {
 		res.Meta = otp.Meta
 	}
+	commonAttrs := []attribute.KeyValue{
+		attribute.String("messageKey", messageKey),
+		attribute.String("ErrorKey", Error.StatusKey),
+	}
+
+	// work begins
+	_, span := r.Tracer.Start(
+		r.Ctx,
+		"End request processes",
+		trace.WithAttributes(commonAttrs...))
+	defer span.End()
 	return res
 }
