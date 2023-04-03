@@ -72,7 +72,7 @@ func createLimit(strLimit string) int64 {
 	return limit
 }
 
-func New(request http.Request, service, serviceVersion string) *InfoRequest {
+func New(request *http.Request, service, serviceVersion string) *InfoRequest {
 	ctx := context.Background()
 	req := &InfoRequest{}
 	req.RequestFilter = request.URL.Query().Get("filter")
