@@ -91,3 +91,56 @@ func Consume(stream, subject string, action func(msg *nats.Msg)) {
 	fmt.Println("Waiting for messages...")
 	select {}
 }
+
+type Histories struct {
+	ClientToken string `json:"client_token"`
+	UserToken   string `json:"user_token"`
+	DocId       string `json:"doc_uuid"`
+	ServiceKey  string `json:"service_key"`
+	EntityName  string `json:"entity_name"`
+	Action      string `json:"action"`
+	VersionNo   int64  `json:"version_no"`
+	Document    any    `json:"document"`
+}
+
+func SendHistory(histories *Histories) error {
+	// Connect to NATS
+	natsUrl := os.Getenv("NATSConnection")
+	if natsUrl == "" {
+		return errors2.New("connection config is not set")
+	}
+	nc, err := nats.Connect(natsUrl)
+	if err != nil {
+		return err
+	}
+	// Create JetStream Context
+	js, err := nc.JetStream(nats.PublishAsyncMaxPending(256))
+	if err != nil {
+		return err
+	}
+	_, err = js.AddStream(&nats.StreamConfig{
+		Name:     "histories",
+		Subjects: []string{"histories.*"},
+	})
+	if err != nil {
+		return err
+	}
+
+	// Encode the person object as JSON
+	payload, err := json.Marshal(histories)
+	if err != nil {
+		return err
+	}
+
+	// Publish the message to the stream
+	msg := &nats.Msg{
+		Subject: "histories." + histories.Action,
+		Data:    payload,
+	}
+	_, err = js.PublishMsg(msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
