@@ -21,7 +21,7 @@ type InfoRequest struct {
 	RequestFilter string
 	PolicyFilter  string
 	GroupFilter   string
-	ServiceFilter []filter
+	ServiceFilter []Filter
 	Sort          string
 	Skip          int64
 	Limit         int64
@@ -32,7 +32,7 @@ type InfoRequest struct {
 	TraceShutdown func(context.Context) error
 	Ctx           context.Context
 }
-type filter struct {
+type Filter struct {
 	Condition any
 	Label     string
 	Operation string
@@ -100,7 +100,7 @@ func New(request http.Request, service, serviceVersion string) *InfoRequest {
 	return req
 }
 
-func createFilter(cond filter) interface{} {
+func createFilter(cond Filter) interface{} {
 	switch cond.Operation {
 	case "text":
 		return bson.M{"$text": bson.M{"$search": cond.Condition.(string)}}
@@ -153,8 +153,8 @@ func ConvertFilterCondition(condition any) any {
 	}
 }
 
-func convertStringFilter(strFilter string) ([]filter, error) {
-	var filters []filter
+func convertStringFilter(strFilter string) ([]Filter, error) {
+	var filters []Filter
 	err := json.Unmarshal([]byte(strFilter), &filters)
 	if err != nil {
 		return nil, err
@@ -163,7 +163,7 @@ func convertStringFilter(strFilter string) ([]filter, error) {
 }
 
 func (r InfoRequest) MongoDbFilter() (map[string]any, error) {
-	var filters []filter
+	var filters []Filter
 	if len(r.ServiceFilter) > 0 {
 		filters = append(filters, r.ServiceFilter...)
 	}
