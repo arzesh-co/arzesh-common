@@ -28,6 +28,7 @@ type InfoRequest struct {
 	ClientToken   string
 	UserToken     string
 	Route         string
+	Lang          string
 	Tracer        trace.Tracer
 	TraceShutdown func(context.Context) error
 	Ctx           context.Context
@@ -77,6 +78,7 @@ func New(request http.Request, service, serviceVersion string) *InfoRequest {
 	req.RequestFilter = request.URL.Query().Get("filter")
 	// TODO : how can fill this part
 	req.PolicyFilter = ""
+	req.Lang = request.Header.Get("lang")
 	req.Skip = createSkip(request.URL.Query().Get("skip"))
 	req.Limit = createLimit(request.URL.Query().Get("limit"))
 	req.Route = request.URL.Path
