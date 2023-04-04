@@ -20,6 +20,7 @@ import (
 )
 
 type InfoRequest struct {
+	Service       string
 	RequestFilter string
 	PolicyFilter  string
 	GroupFilter   string
@@ -77,6 +78,7 @@ func createLimit(strLimit string) int64 {
 func New(request *http.Request, service, serviceVersion string) *InfoRequest {
 	ctx := context.Background()
 	req := &InfoRequest{}
+	req.Service = service
 	req.RequestFilter = request.URL.Query().Get("filter")
 	// TODO : how can fill this part
 	req.PolicyFilter = ""
@@ -181,7 +183,7 @@ func convertStringFilter(strFilter string) ([]Filter, error) {
 	return filters, nil
 }
 
-func (r InfoRequest) MongoDbFilter() (map[string]any, error) {
+func (r InfoRequest) MongoDbFilter(needAccount bool) (map[string]any, error) {
 	var filters []Filter
 	if len(r.ServiceFilter) > 0 {
 		filters = append(filters, r.ServiceFilter...)
@@ -211,9 +213,17 @@ func (r InfoRequest) MongoDbFilter() (map[string]any, error) {
 			listCondition[i] = condition
 		}
 		clintFilterMap["$and"] = listCondition
+		if needAccount {
+			serviceAccount := jwt.FindValue(r.ClientToken, r.Service)
+			clintFilterMap["acnt_uuid"] = serviceAccount
+		}
 		return clintFilterMap, nil
 	}
 	clintFilterMap[filters[0].Label] = createFilter(filters[0])
+	if needAccount {
+		serviceAccount := jwt.FindValue(r.ClientToken, r.Service)
+		clintFilterMap["acnt_uuid"] = serviceAccount
+	}
 	return clintFilterMap, nil
 }
 func (r InfoRequest) MongoDbSorting() (map[string]any, error) {
@@ -264,14 +274,14 @@ func (r InfoRequest) MongoDbAggregation() map[string]interface{} {
 	return group
 }
 
-func (r InfoRequest) PipeLineMongoDbAggregate() ([]bson.M, any) {
+func (r InfoRequest) PipeLineMongoDbAggregate(needAccount bool) ([]bson.M, any) {
 	line := &MongoPipeLine{}
 	var err error
 	line.Sort, err = r.MongoDbSorting()
 	if err != nil {
 		line.Sort = nil
 	}
-	line.Filter, err = r.MongoDbFilter()
+	line.Filter, err = r.MongoDbFilter(needAccount)
 	if err != nil {
 		line.Filter = nil
 	}
