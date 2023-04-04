@@ -3,8 +3,10 @@ package API
 import (
 	"context"
 	"encoding/json"
+	errors2 "errors"
 	"fmt"
 	"github.com/arzesh-co/arzesh-common/errors"
+	"github.com/arzesh-co/arzesh-common/jwt"
 	"github.com/arzesh-co/arzesh-common/tools"
 	"github.com/arzesh-co/arzesh-common/tracing"
 	"go.mongodb.org/mongo-driver/bson"
@@ -100,6 +102,21 @@ func New(request *http.Request, service, serviceVersion string) *InfoRequest {
 	defer span.End()
 	req.Ctx = ctx
 	return req
+}
+
+func (r InfoRequest) ClientValidationRequest() bool {
+	return jwt.Validate(r.ClientToken)
+}
+func (r InfoRequest) UserValidationRequest() (bool, error) {
+	IsClientValid := jwt.Validate(r.ClientToken)
+	if !IsClientValid {
+		return false, errors2.New("client token is not valid")
+	}
+	IsUserTokenValid := jwt.Validate(r.UserToken)
+	if !IsUserTokenValid {
+		return false, errors2.New("user token is not valid")
+	}
+	return true, nil
 }
 
 func createFilter(cond Filter) interface{} {
