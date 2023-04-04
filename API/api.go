@@ -348,7 +348,7 @@ func (r InfoRequest) NewResponse(data any, messageKey string, Error *errors.Resp
 	if Error != nil {
 		res.Error = Error
 	}
-	if opt != nil {
+	if opt != nil && Error == nil {
 		res.Meta = opt.Meta
 	}
 	commonAttrs := []attribute.KeyValue{
