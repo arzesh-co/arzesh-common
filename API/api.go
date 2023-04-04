@@ -311,23 +311,21 @@ type ResponseOtp struct {
 	Meta map[string]any
 }
 
-func (opt ResponseOtp) SetPagination(totalCount int64, skip, limit string) {
+func (opt ResponseOtp) SetPagination(totalCount, skip, limit int64) {
 	if opt.Meta == nil {
 		opt.Meta = make(map[string]any)
 	}
-	current, _ := strconv.ParseInt(skip, 10, 64)
-	MLimit, _ := strconv.ParseInt(limit, 10, 64)
-	opt.Meta["current"] = current
-	if skip == "0" {
+	opt.Meta["current"] = skip
+	if skip == 0 {
 		opt.Meta["current"] = 1
-		current = 1
+		skip = 1
 	}
 	opt.Meta["total"] = totalCount
-	if (current * MLimit) < totalCount {
-		opt.Meta["next"] = current + 1
+	if (skip * limit) < totalCount {
+		opt.Meta["next"] = skip + 1
 	}
-	if current > 1 {
-		opt.Meta["prev"] = current - 1
+	if skip > 1 {
+		opt.Meta["prev"] = skip - 1
 	}
 }
 
