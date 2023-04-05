@@ -346,7 +346,8 @@ type apiResponse struct {
 	Meta    map[string]any         `json:"meta,omitempty"`
 }
 
-func (r InfoRequest) NewResponse(data any, messageKey string, Error *errors.ResponseErrors, opt *ResponseOtp) *apiResponse {
+func (r InfoRequest) NewResponse(data any, messageKey string,
+	Error *errors.ResponseErrors, opt *ResponseOtp, isArray bool) *apiResponse {
 	res := &apiResponse{}
 	//TODO : create message of template
 	if messageKey != "" {
@@ -360,6 +361,9 @@ func (r InfoRequest) NewResponse(data any, messageKey string, Error *errors.Resp
 	}
 	if opt != nil && Error == nil {
 		res.Meta = opt.Meta
+	}
+	if isArray && Error == nil {
+		res.Data = make([]map[string]any, 0)
 	}
 	commonAttrs := []attribute.KeyValue{
 		attribute.String("messageKey", messageKey),
