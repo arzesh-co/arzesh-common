@@ -52,7 +52,7 @@ type Entities struct {
 }
 
 func FindError(key string) *Errors {
-	strErr := tools.GetValueFromShardCommonDb("Error:" + key)
+	strErr := tools.GetValueFromShardCommonDb("Errors:" + key)
 	if strErr == "" {
 		return nil
 	}
@@ -76,7 +76,7 @@ func convertErrorToResponseErr(Err *Errors, lang string) *ResponseErrors {
 }
 
 func FindEntityName(entity string, lang string) string {
-	strEntity := tools.GetValueFromShardCommonDb("Entity:" + entity)
+	strEntity := tools.GetValueFromShardCommonDb("Entities:" + entity)
 	if strEntity == "" {
 		return ""
 	}

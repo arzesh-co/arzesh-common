@@ -345,13 +345,36 @@ type apiResponse struct {
 	Message string                 `json:"message,omitempty"`
 	Meta    map[string]any         `json:"meta,omitempty"`
 }
+type message struct {
+	Id         string            `json:"id" bson:"_id"`
+	MessageKey string            `json:"message_key" bson:"message_key"`
+	Title      map[string]string `json:"title" bson:"title"`
+	Detail     map[string]string `json:"detail" bson:"detail"`
+	Status     int               `json:"status" bson:"status"`
+}
 
+func findMessage(messageKey string, lang string) string {
+	strEntity := tools.GetValueFromShardCommonDb("Messages:" + messageKey)
+	if strEntity == "" {
+		return ""
+	}
+	m := &message{}
+	err := json.Unmarshal([]byte(strEntity), m)
+	if err != nil {
+		return ""
+	}
+	detail, ok := m.Detail[lang]
+	if !ok {
+		return ""
+	}
+	return detail
+}
 func (r InfoRequest) NewResponse(data any, messageKey string,
 	Error *errors.ResponseErrors, opt *ResponseOtp, isArray bool) *apiResponse {
 	res := &apiResponse{}
-	//TODO : create message of template
 	if messageKey != "" {
-		res.Message = messageKey
+		messageDetail := findMessage(messageKey, r.Lang)
+		res.Message = messageDetail
 	}
 	if data != nil {
 		res.Data = data

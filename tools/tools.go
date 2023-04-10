@@ -33,7 +33,7 @@ func ConvertorToInt64(n any) int64 {
 	return int64(0)
 }
 func GetValueFromShardCommonDb(key string) string {
-	redisAddr := os.Getenv("redisConnection")
+	redisAddr := os.Getenv("redis")
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     redisAddr,
 		Username: "common",
@@ -41,7 +41,7 @@ func GetValueFromShardCommonDb(key string) string {
 		DB:       6,  // use default DB
 	})
 	ctx := context.Background()
-	val, err := rdb.Get(ctx, "Error:"+key).Result()
+	val, err := rdb.Get(ctx, key).Result()
 	if err != nil {
 		return ""
 	}
