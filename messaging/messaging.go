@@ -65,24 +65,27 @@ func Consume(stream, subject string, action func(msg *nats.Msg)) {
 
 	// Create JetStream Context
 	js, _ := nc.JetStream(nats.PublishAsyncMaxPending(256))
-	_, err = js.AddStream(&nats.StreamConfig{
-		Name:     stream,
-		Subjects: []string{stream + ".*"},
-	})
-	if err != nil {
-		fmt.Println("error to sync 2 :", err.Error())
-		return
-	}
 
 	// Get last sequence number
-	info, err := js.StreamInfo(stream)
+	_, err = js.StreamInfo(stream)
 	if err != nil {
-		fmt.Println("error to get stream info :", err.Error())
-		return
+		_, err = js.AddStream(&nats.StreamConfig{
+			Name:        stream,
+			AllowDirect: true,
+			Subjects:    []string{stream + ".*"},
+		})
+		if err != nil {
+			fmt.Println("error to sync 2 :", err.Error())
+			return
+		}
+		_, err = js.StreamInfo(stream)
+		if err != nil {
+			fmt.Println("error to get stream info :", err.Error())
+			return
+		}
 	}
-	startSeq := info.State.LastSeq
 	// Simple Async Ephemeral Consumer with StartSeq option
-	_, err = js.Subscribe(subject, action, nats.StartSequence(startSeq+1)) // start from the next sequence number
+	_, err = js.Subscribe(subject, action, nats.Durable(stream)) // start from the next sequence number
 	if err != nil {
 		fmt.Println("error to subscribe :", err.Error())
 		return

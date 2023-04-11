@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/arzesh-co/arzesh-common/errors"
 	"github.com/arzesh-co/arzesh-common/jwt"
+	"github.com/arzesh-co/arzesh-common/personalization"
 	"github.com/arzesh-co/arzesh-common/tools"
 	"github.com/arzesh-co/arzesh-common/tracing"
 	"go.mongodb.org/mongo-driver/bson"
@@ -318,7 +319,8 @@ func (r InfoRequest) PipeLineMongoDbAggregate(needAccount bool) ([]bson.M, any) 
 }
 
 type ResponseOtp struct {
-	Meta map[string]any
+	Meta        map[string]any
+	IsArrayData bool
 }
 
 func (opt ResponseOtp) SetPagination(totalCount, skip, limit int64) {
@@ -369,8 +371,13 @@ func findMessage(messageKey string, lang string) string {
 	}
 	return detail
 }
+
+func (r InfoRequest) FindPersonalizationInfoByKey(key string) map[string]any {
+	return personalization.GetUserPersonalizationInfoByKey(r.UserToken, r.ClientToken, key)
+}
+
 func (r InfoRequest) NewResponse(data any, messageKey string,
-	Error *errors.ResponseErrors, opt *ResponseOtp, isArray bool) *apiResponse {
+	Error *errors.ResponseErrors, opt *ResponseOtp) *apiResponse {
 	res := &apiResponse{}
 	if messageKey != "" {
 		messageDetail := findMessage(messageKey, r.Lang)
@@ -385,7 +392,7 @@ func (r InfoRequest) NewResponse(data any, messageKey string,
 	if opt != nil && Error == nil {
 		res.Meta = opt.Meta
 	}
-	if isArray && Error == nil {
+	if opt.IsArrayData && Error == nil {
 		res.Data = make([]map[string]any, 0)
 	}
 	commonAttrs := []attribute.KeyValue{

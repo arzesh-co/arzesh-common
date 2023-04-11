@@ -1,6 +1,8 @@
 package date
 
 import (
+	"github.com/hablullah/go-hijri"
+	ptime "github.com/yaa110/go-persian-calendar"
 	"strconv"
 	"time"
 )
@@ -31,6 +33,25 @@ func UnixTimeStampToDate(timeStamp int64) time.Time {
 	return time.Unix(timeStamp, 0)
 }
 
+func UnixTimeStampToStringDateByLocation(timeStamp int64, Location string) string {
+	date := UnixTimeStampToDate(timeStamp)
+	switch Location {
+	case "Asia/Tehran":
+		pt := ptime.New(date)
+		return pt.Format("yyyy-MM-dd")
+	case "Asia/Dubai":
+		ht, err := hijri.CreateHijriDate(date, hijri.Default)
+		if err != nil {
+			return ""
+		}
+		sYear := strconv.Itoa(int(ht.Year))
+		sMonth := strconv.Itoa(int(ht.Month))
+		sDay := strconv.Itoa(int(ht.Day))
+		return sYear + "-" + sMonth + "-" + sDay
+	default:
+		return date.Format("2006-02-01")
+	}
+}
 func Now() int64 {
 	return time.Now().Unix()
 }
