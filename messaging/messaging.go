@@ -8,6 +8,39 @@ import (
 	"os"
 )
 
+func CreateStream(stream, subject string) error {
+	// Connect to NATS
+	natsUrl := os.Getenv("NATSConnection")
+	if natsUrl == "" {
+		return errors2.New("connection config is not set")
+	}
+	nc, err := nats.Connect(natsUrl)
+	if err != nil {
+		return err
+	}
+
+	// Create JetStream Context
+	js, _ := nc.JetStream(nats.PublishAsyncMaxPending(256))
+
+	// Get last sequence number
+	_, err = js.StreamInfo(stream)
+	if err != nil {
+		_, err = js.AddStream(&nats.StreamConfig{
+			Name:        stream,
+			AllowDirect: true,
+			Subjects:    []string{stream + ".*"},
+		})
+		if err != nil {
+			return err
+		}
+		_, err = js.StreamInfo(stream)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func Send(message interface{}, stream, subject string) error {
 	// Connect to NATS
 	natsUrl := os.Getenv("NATSConnection")
