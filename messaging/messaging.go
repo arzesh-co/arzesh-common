@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-func CreateStream(stream, subject string) error {
+func CreateStream(stream string, subject []string) error {
 	// Connect to NATS
 	natsUrl := os.Getenv("NATSConnection")
 	if natsUrl == "" {
@@ -28,7 +28,7 @@ func CreateStream(stream, subject string) error {
 		_, err = js.AddStream(&nats.StreamConfig{
 			Name:        stream,
 			AllowDirect: true,
-			Subjects:    []string{stream + ".*"},
+			Subjects:    subject,
 		})
 		if err != nil {
 			return err
