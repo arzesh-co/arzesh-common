@@ -56,12 +56,22 @@ func Send(message interface{}, stream, subject string) error {
 	if err != nil {
 		return err
 	}
-	_, err = js.AddStream(&nats.StreamConfig{
-		Name:     stream,
-		Subjects: []string{stream + ".*"},
-	})
+	_, err = js.StreamInfo(stream)
 	if err != nil {
-		return err
+		_, err = js.AddStream(&nats.StreamConfig{
+			Name:        stream,
+			AllowDirect: true,
+			Subjects:    []string{stream + ".*"},
+		})
+		if err != nil {
+			fmt.Println("error to sync 2 :", err.Error())
+			return err
+		}
+		_, err = js.StreamInfo(stream)
+		if err != nil {
+			fmt.Println("error to get stream info :", err.Error())
+			return err
+		}
 	}
 
 	// Encode the person object as JSON
