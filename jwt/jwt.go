@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"io/ioutil"
+	"os"
 )
 
 // Validate is a method that validates a JWT using an RSA public key
 func Validate(token string) bool {
 	// Read the RSA public key from file
-	publicKey, _ := ioutil.ReadFile("privateRsa.rsa.pub")
+	publicKey, _ := ioutil.ReadFile(os.Getenv("publicRsaKeyPath"))
 
 	// Parse the RSA public key
 	key, err := jwt.ParseRSAPublicKeyFromPEM(publicKey)
@@ -43,7 +44,7 @@ func Validate(token string) bool {
 // FindValue find a specific value in token claim
 func FindValue(token, key string) interface{} {
 	// Read the RSA public key from file
-	publicKey, _ := ioutil.ReadFile("privateRsa.rsa.pub")
+	publicKey, _ := ioutil.ReadFile(os.Getenv("publicRsaKeyPath"))
 
 	// Parse the RSA public key
 	rsaKey, err := jwt.ParseRSAPublicKeyFromPEM(publicKey)
@@ -83,7 +84,7 @@ func FindValue(token, key string) interface{} {
 // Open extract token claim and return claim values
 func Open(token string) map[string]interface{} {
 	// Read the RSA public key from file
-	publicKey, _ := ioutil.ReadFile("privateRsa.rsa.pub")
+	publicKey, _ := ioutil.ReadFile(os.Getenv("publicRsaKeyPath"))
 
 	// Parse the RSA public key
 	rsaKey, err := jwt.ParseRSAPublicKeyFromPEM(publicKey)
