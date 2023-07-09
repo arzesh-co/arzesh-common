@@ -3,21 +3,24 @@ package errors
 import (
 	"encoding/json"
 	"github.com/arzesh-co/arzesh-common/tools"
+	"io/ioutil"
+	"net/http"
+	"os"
 	"strings"
 )
 
-type ResponseErrors struct {
-	ErrorType struct {
-		Title string `json:"title"`
-		Desc  string `json:"desc"`
-		Url   string `json:"url"`
-	} `json:"error_type"`
-	StatusKey string            `json:"status_key"`
-	Detail    string            `json:"detail"`
-	Title     string            `json:"title"`
-	Meta      map[string]string `json:"meta"`
-	HelpUrl   string            `json:"help_url"`
-}
+//	type ResponseErrors struct {
+//		ErrorType struct {
+//			Title string `json:"title"`
+//			Desc  string `json:"desc"`
+//			Url   string `json:"url"`
+//		} `json:"error_type"`
+//		StatusKey string            `json:"status_key"`
+//		Detail    string            `json:"detail"`
+//		Title     string            `json:"title"`
+//		Meta      map[string]string `json:"meta"`
+//		HelpUrl   string            `json:"help_url"`
+//	}
 type ErrorType struct {
 	Id         string            `json:"_id" bson:"_id"`
 	Key        string            `json:"key" bson:"key"`
@@ -113,19 +116,66 @@ func setParamsToResponseErr(res *ResponseErrors, DefaultParams []ErrorParam, par
 	return res
 }
 
-func New(key, lang, entity string, developerInfo string, params map[string]string) *ResponseErrors {
-	Err := FindError(key)
-	if Err == nil {
+type ResponseErrors struct {
+	ErrorType struct {
+		Title string `json:"title"`
+		Desc  string `json:"desc"`
+		Url   string `json:"url"`
+	} `json:"error_type"`
+	StatusKey string         `json:"status_key"`
+	Detail    string         `json:"detail"`
+	Title     string         `json:"title"`
+	HelpUrl   string         `json:"help_url"`
+	MetaData  map[string]any `json:"meta_data"`
+}
+
+func getError(key string, account string, lang string, params map[string]string) *ResponseErrors {
+	req, err := http.NewRequest("GET", os.Getenv("coreApi")+"/api/core/errors/key/"+key, nil)
+	if err != nil {
 		return nil
 	}
-	res := convertErrorToResponseErr(Err, lang)
-	res = setParamsToResponseErr(res, Err.Params, params, entity, lang)
+	req.Header.Set("account_uuid", account)
+	q := req.URL.Query()
+	q.Add("lang", lang)
+	paramsS, _ := json.Marshal(params)
+	q.Add("params", string(paramsS))
+	req.URL.RawQuery = q.Encode()
+	client := &http.Client{
+		Transport: &http.Transport{},
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil
+	}
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil
+	}
+	Info := &ResponseErrors{}
+	err = json.Unmarshal(body, Info)
+	if err != nil {
+		return nil
+	}
+	return Info
+}
 
-	//TODO: this part must be remove ...
-	if developerInfo != "" {
-		meta := make(map[string]string)
-		meta["dev_info"] = developerInfo
-		res.Meta = meta
+func New(key, lang, entity string, developerInfo string, params map[string]string) *ResponseErrors {
+	//Err := FindError(key)
+	//if Err == nil {
+	//	return nil
+	//}
+	//res := convertErrorToResponseErr(Err, lang)
+	//res = setParamsToResponseErr(res, Err.Params, params, entity, lang)
+	//
+	////TODO: this part must be remove ...
+	//if developerInfo != "" {
+	//	meta := make(map[string]string)
+	//	meta["dev_info"] = developerInfo
+	//	res.Meta = meta
+	//}
+	res := getError(key, "", lang, params)
+	if res == nil {
+		return nil
 	}
 	return res
 }
