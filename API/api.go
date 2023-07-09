@@ -403,11 +403,14 @@ func (r InfoRequest) NewResponse(data any, messageKey string,
 		commonAttrs = append(commonAttrs, attribute.String("ErrorKey", Error.StatusKey))
 	}
 
-	// work begins
-	_, span := r.Tracer.Start(
-		r.Ctx,
-		"End request processes",
-		trace.WithAttributes(commonAttrs...))
-	defer span.End()
+	if r.Tracer != nil {
+		// work begins
+		_, span := r.Tracer.Start(
+			r.Ctx,
+			"End request processes",
+			trace.WithAttributes(commonAttrs...))
+		defer span.End()
+	}
+
 	return res
 }
