@@ -395,9 +395,12 @@ func (r InfoRequest) NewResponse(data any, messageKey string,
 	if opt != nil && data == nil && opt.IsArrayData && Error == nil {
 		res.Data = make([]map[string]any, 0)
 	}
-	commonAttrs := []attribute.KeyValue{
-		attribute.String("messageKey", messageKey),
-		attribute.String("ErrorKey", Error.StatusKey),
+	commonAttrs := make([]attribute.KeyValue, 0)
+	if messageKey != "" {
+		commonAttrs = append(commonAttrs, attribute.String("messageKey", messageKey))
+	}
+	if Error != nil {
+		commonAttrs = append(commonAttrs, attribute.String("ErrorKey", Error.StatusKey))
 	}
 
 	// work begins
